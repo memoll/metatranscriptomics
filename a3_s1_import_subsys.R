@@ -44,8 +44,8 @@ path = "~/Documents/subsys"
 list.files(path)
 # Get file names ####
 files = list.files(path, pattern = "*.reduced", full.names = T, recursive = FALSE)
-
-# loading the files in
+files
+# loading the files 
 y <- 0
 for (x in files) {
   y <- y + 1
@@ -82,7 +82,7 @@ for (name in file_names) {
 file_names_trimmed = file_names_trimmed[-1]
 file_names_trimmed
 dim(table_trimmed);length(file_names_trimmed)
-colnames(table_trimmed) = c(file_names_trimmed[1:32],"Level3","Level2","Level1") #replace file names
+colnames(table_trimmed) = c(file_names_trimmed[1:32],"Level3","Level2","Level1") #replace file names and NAs (levels)
 which(colnames(table_trimmed) == "") #find if there's any protein with no name
 table_trimmed = table_trimmed[-1,] #remove the protein with no hierchy
 head(table_trimmed); dim(table_trimmed)
@@ -93,3 +93,4 @@ View(head(flipped_table))
 View(tail(flipped_table))
 rownames(flipped_table); dim(flipped_table)
 
+write.table(flipped_table,"~/Documents/article3/metatranscriptomics/aca_rna_subsystem.tsv",sep = "\t", quote = FALSE)
