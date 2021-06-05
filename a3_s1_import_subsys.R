@@ -97,7 +97,18 @@ flipped_table = data.frame(t(table_trimmed), check.names = FALSE) #checknames: c
 View(head(flipped_table))
 View(tail(flipped_table))
 rownames(flipped_table); dim(flipped_table)
-
 write.table(flipped_table,"~/Documents/article3/metatranscriptomics/aca_rna_subsystem.tsv",sep = "\t", quote = FALSE)
 saveRDS(flipped_table, "~/Documents/article3/metatranscriptomics/aca_rna_subsystem.rds")
-save.image("~/Documents/article3/metatranscriptomics/a3_s1_import_subsys.rds")
+
+# Export gene names ####
+gene_names = colnames(flipped_table)
+gene_lables = paste0(">gene", seq(colnames(flipped_table)))
+gene_table = cbind(gene_lables,gene_names)
+head(gene_table);dim(gene_table)
+write.table(gene_table,"~/Documents/article3/metatranscriptomics/gene_names.tsv",sep = "\t", quote = FALSE)
+
+identical(gene_names,colnames(flipped_table))
+colnames(flipped_table) = paste0(">gene", seq(colnames(flipped_table))) #replace sequence w/ ASV
+head(flipped_table)[1:5,1:5];dim(flipped_table)
+
+save.image("~/Documents/article3/metatranscriptomics/a3_s1_import_subsys.Rdata")
