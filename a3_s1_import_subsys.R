@@ -94,3 +94,5 @@ View(tail(flipped_table))
 rownames(flipped_table); dim(flipped_table)
 
 write.table(flipped_table,"~/Documents/article3/metatranscriptomics/aca_rna_subsystem.tsv",sep = "\t", quote = FALSE)
+saveRDS(flipped_table, "~/Documents/article3/metatranscriptomics/aca_rna_subsystem.rds")
+save.image("~/Documents/article3/metatranscriptomics/a3_s1_import_subsys.rds")
