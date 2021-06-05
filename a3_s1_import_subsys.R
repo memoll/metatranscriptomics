@@ -1,3 +1,6 @@
+# Script to import seed sybsystem annotation data
+# Data: Hiseq - metranscriptomics
+# Mona Parizadeh - June 2021
 
 # import packages
 library(scales); packageVersion("scales") #‘1.1.1’
