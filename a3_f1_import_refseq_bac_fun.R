@@ -56,8 +56,9 @@ fun_table = cbind(fun_lables,fun_names)
 colnames(fun_table) = c("id","function")
 head(fun_table);dim(fun_table)
 write.table(fun_table,"~/Documents/article3/metatranscriptomics/function_names.tsv",sep = "\t", quote = FALSE)
-saveRDS(fun_table, "~/Documents/article3/metatranscriptomics/aca_rna_refseq_bac_fun.rds")
+# Rename functions 
+rownames(table_trimmed) = fun_lables
+saveRDS(table_trimmed, "~/Documents/article3/metatranscriptomics/aca_rna_refseq_bac_fun.rds")
 
 save.image("~/Documents/article3/metatranscriptomics/a3_f1_import_refseq_bac_fun.Rdata")
-
 
