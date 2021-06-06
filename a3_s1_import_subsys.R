@@ -1,7 +1,7 @@
 ###############################################################
-# Script to import seed sybsystem annotation data
-# Data: Hiseq - metranscriptomics
-# Mona Parizadeh - 2020-2021                             
+# Script to import seed sybsystem annotation data             #
+# Data: Hiseq - metranscriptomics                             # 
+# Mona Parizadeh - 2020-2021                                  #
 ###############################################################
 
 # import packages
