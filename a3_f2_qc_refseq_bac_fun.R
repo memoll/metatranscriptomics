@@ -1,7 +1,7 @@
 ###############################################################
 # Cleaning metatranscriptomic data                            #
 # Data: Hiseq - RefSeq Bacteria                               # 
-# Mona Parizadeh - June 2021                                  #
+# Mona Parizadeh - 2020-2021                                  #
 ###############################################################
 
 # Load libraries
