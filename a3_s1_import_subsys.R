@@ -90,6 +90,7 @@ dim(table_trimmed);length(file_names_trimmed)
 colnames(table_trimmed) = c(file_names_trimmed[1:32],"Level3","Level2","Level1") #replace file names and NAs (levels)
 which(colnames(table_trimmed) == "") #find if there's any protein with no name
 table_trimmed = table_trimmed[-1,] #remove the protein with no hierchy
+table_trimmed = table_trimmed[-which(table_trimmed$Level1 == ""),]
 head(table_trimmed); dim(table_trimmed)
 
 # Export gene names ####
