@@ -79,7 +79,7 @@ ggplot(data = obs,mapping = aes(x = Depth,y = Alpha_diversity_mean,colour=Sample
         axis.text.y = element_text(size = 14),
         axis.title = element_text(size = 18, face = "bold"),
         title = element_text(size = 14, face = "bold")) 
-#% 5,000 cutoff #### 
+#cutoff
 summary(sample_sums(ps))
 ps.rare = rarefy_even_depth(ps, sample.size = 1290000, rngseed = 306, trimOTUs = TRUE, replace = TRUE)
 ps.rare
