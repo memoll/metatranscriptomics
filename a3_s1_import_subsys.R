@@ -8,43 +8,10 @@
 library(scales); packageVersion("scales") #‘1.1.1’
 library(reshape2); packageVersion("reshape2") #‘1.4.4’
 library(vegan); packageVersion("vegan") #‘2.5.7’
+library("ggplot2"); packageVersion("ggplot2") #‘3.3.3’
+library("data.table"); packageVersion("data.table") #‘1.13.6’
 
-suppressPackageStartupMessages({
-  library(optparse)
-})
-
-option_list = list(
-  make_option(c("-I", "--input"), type="character", default="./",
-              help="Input directory", metavar="character"),
-  make_option(c("-O", "--out"), type="character", default="Subsys_pie_chart.pdf", 
-              help="output image name; [default= %default]", metavar="character"),
-  make_option(c("-L", "--level"), type="integer", default=1,
-              help="level of Subsystems hierarchy for pie chart; [default=%default]", metavar="character")
-)
-
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser)
-print("USAGE: $ Subsystems_pie_charts.R -I working_directory/ -O save.filename -L level (1,2,3,4)")
-
-# check for necessary specs
-if (is.null(opt$input)) {
-  print ("WARNING: No working input directory specified with '-I' flag.")
-  stop()
-} else {  cat ("Working directory is ", opt$input, "\n")
-  wd_location <- opt$input  
-  setwd(wd_location)  }
-
-cat ("Saving results as ", opt$out, "\n")
-save_filename <- opt$out
-
-cat ("Creating pie chart for hierarchy level ", opt$level, "\n")
-
-# import other necessary packages
-suppressPackageStartupMessages({
-  library("ggplot2")
-  library("data.table")
-})
-
+# Import data ####
 path = "~/Documents/subsys"
 list.files(path)
 # Get file names ####
