@@ -103,8 +103,11 @@ write.table(gene_table,"~/Documents/article3/metatranscriptomics/gene_names.tsv"
 
 # Flip table ####
 flipped_table = data.frame(t(table_trimmed), check.names = FALSE) #checknames: checks if the row/colnames are syntactically valid variable names.
+identical(colnames(flipped_table),gene_names)
 View(head(flipped_table))
 View(tail(flipped_table))
+colnames(flipped_table) = gene_lables
+flipped_table[1:5,1:5]
 rownames(flipped_table); dim(flipped_table)
 write.table(flipped_table,"~/Documents/article3/metatranscriptomics/aca_rna_subsystem.tsv",sep = "\t", quote = FALSE)
 saveRDS(flipped_table, "~/Documents/article3/metatranscriptomics/aca_rna_subsystem.rds")
