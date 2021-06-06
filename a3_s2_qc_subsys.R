@@ -53,7 +53,7 @@ plot_richness(ps, "neonic","month", measures = "Shannon") +
 # ps.rd10 = prune_taxa(taxa_sums(ps) > 100, ps)
 # ps.rd10 = prune_samples(sample_sums(ps.rd10)>0,ps.rd10) 
 # ps.rd10
-# # No sample filtering (at least 1000 reads) ####
+# # No sample filtering (at least 1000000 reads) ####
 # summary(sample_sums(ps))
 # ps.rd10M = prune_samples(sample_sums(ps)>=1000000, ps)
 # ps.rd10M = prune_taxa(taxa_sums(ps.rd10M)>0, ps.rd10M)
