@@ -76,7 +76,7 @@ rownames(data_table) = data_table$Level4
 table_trimmed = data_table[,-1] #remove the extra column contaning rownames
 View(head(table_trimmed))
 colnames(table_trimmed)
-
+# Clean sample names
 file_names = ""
 for (name in colnames(table_trimmed)) {
   file_names = c(file_names, unlist(strsplit(name, split='_', fixed=TRUE))[2])}
