@@ -73,6 +73,7 @@ flipped_table = data.frame(t(table_trimmed), check.names = FALSE) #checknames: c
 identical(colnames(flipped_table),gene_names)
 View(head(flipped_table))
 View(tail(flipped_table))
+# Rename genes
 colnames(flipped_table) = gene_lables
 flipped_table[1:5,1:5]
 rownames(flipped_table); dim(flipped_table)
