@@ -31,10 +31,10 @@ saveRDS(ps, "ps_ref_bac.rds")
 #Explore data ####
 summary(taxa_sums(ps))
 summary(sample_sums(ps))
-asv.rich = estimate_richness(ps, measures = "Observed") #gene per sample (richness)
-summary(asv.rich)
-sd(asv.rich$Observed, na.rm=TRUE) /  
-  sqrt(length(asv.rich$Observed[!is.na(asv.rich$Observed)])) #SE 
+gene.rich = estimate_richness(ps, measures = "Observed") #gene per sample (richness)
+summary(gene.rich)
+sd(gene.rich$Observed, na.rm=TRUE) /  
+  sqrt(length(gene.rich$Observed[!is.na(gene.rich$Observed)])) #SE 
 
 #Check for outliers ####
 #% NMDS####
