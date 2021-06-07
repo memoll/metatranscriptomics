@@ -73,7 +73,7 @@ ggplot(data = obs,mapping = aes(x = Depth,y = Alpha_diversity_mean,colour=Sample
   theme_bw() +
   scale_x_continuous(breaks = seq(0,16000000,200000))+ geom_line() + theme_bw() +theme(legend.position = "none") + 
   #labs(title = "Rarefaction curve") +
-  labs(x = "\nNumber of sequences", y = "Observed number of functions\n") + geom_point(size = 1) +
+  labs(x = "\nNumber of sequences", y = "Observed number of genes\n") + geom_point(size = 1) +
   theme(axis.text.x = element_text(size = 14, angle = 90),
         axis.text.y = element_text(size = 14),
         axis.title = element_text(size = 18, face = "bold"),
