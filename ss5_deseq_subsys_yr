@@ -1,0 +1,147 @@
+################################################################
+# Differential expression analysis of soil metatranscriptomics #
+# Data: Hiseq - seed sybsystem - year                          # 
+# Mona Parizadeh - 2020-2021                                   #
+################################################################
+
+library(phyloseq); packageVersion("phyloseq") #‘1.34.0’
+library(vegan); packageVersion("vegan") #‘2.5.7’
+library(ggplot2); packageVersion("ggplot2") #‘3.3.3’
+library(DESeq2); packageVersion("DESeq2") #‘1.30.0’
+library(dplyr); packageVersion("dplyr") #‘1.0.4’
+
+# Import data #### 
+setwd("~/Documents/article3/metatranscriptomics_dbCor/")
+ps = readRDS("ps_sys_dbCor.rds")
+ps
+sample_data(ps)$neonic = as.factor(sample_data(ps)$neonic)
+hier <- read.delim("gene_names_dbCor.tsv",sep="\t", header=TRUE) 
+rownames(hier) = hier$gene
+head(hier);dim(hier)
+
+#Phyloseq to deseq2 conversion ####
+phTOds = phyloseq_to_deseq2(ps, design = ~ year) #dds file
+is(phTOds); isS4(phTOds)
+#contents
+slotNames(phTOds) 
+#estimate size factors 
+fcs = estimateSizeFactors(phTOds) #no need to calculate geometric means
+#Bayesian estimation of dispersion
+dsp = estimateDispersions(fcs)
+plotDispEsts(dsp)
+
+#DESeq ####
+dds = DESeq(phTOds, test = "Wald", fitType="local")
+head(colData(dds))
+
+# investigate test results table ####
+#results(): extracts a table from a DESeq analysis
+resultsNames(dds)
+res = results(dds)
+res = res[order(res$padj, na.last=NA), ] #remove padj NAs
+head(res)
+mcols(res, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res); is(res)
+slotNames(res)
+summary(res)
+hist(res$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res$padj < 0.1, na.rm=TRUE)
+sum(res$padj < 0.05, na.rm=TRUE)
+sum(res$padj < 0.01, na.rm=TRUE)
+
+#Set padj the threshold ####
+alpha = 0.05 # Threshold on the adjusted p-value
+sigtab = res[(res$padj < alpha), ]
+sigtab
+hier05 = hier %>% dplyr::filter(rownames(hier) %in% rownames(sigtab))
+
+#Combine gene with results ####
+sigtab = cbind(as(sigtab, "data.frame"), 
+               as(hier[rownames(sigtab), ], "matrix"))
+View(sigtab)
+ggplot(sigtab, aes(x=rownames(sigtab), y=log2FoldChange, color=level1)) + 
+  geom_hline(yintercept = 0.0, color = "gray", size = 0.5) +
+  geom_point(size=2) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5, size = 5),
+        legend.position = "none") 
+
+# Phylum order based on log2Foldchange 
+genLev1 = tapply(sigtab$log2FoldChange, sigtab$level1, function(x) max(x))
+genLev1 = sort(genLev1, TRUE)
+sigtab$level1 = factor(as.character(sigtab$level1), levels=names(genLev1))
+# Order genera based on their log2fold
+lev4 = tapply(sigtab$log2FoldChange, sigtab$level4, function(x) max(x))
+lev4 = sort(lev4, TRUE)
+sigtab$level4 = factor(as.character(sigtab$level4), levels=names(lev4))
+lev4 = tapply(sigtab$log2FoldChange, sigtab$level4, function(x) max(x))
+lev4 = sort(lev4, TRUE);length(lev4)
+sigtab$level4 = factor(as.character(sigtab$level4), levels=names(lev4))
+ggplot(sigtab, aes(x=level4, y=log2FoldChange, color=level1)) + 
+  theme_classic() +
+  geom_hline(yintercept = 0.0, color = "gray", size = 0.5) +
+  #geom_point(size=2) + 
+  geom_bar(aes(fill = lev4), stat = "identity") +
+  #facet_wrap(~level1, scales = "free") +
+  #scale_color_manual(values=c("cornflowerblue","indianred1","mediumvioletred","darkolivegreen4")) +
+  theme(axis.text.x = element_text(size = 2, angle = -90, hjust = 0, vjust=0.5),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text( size = 14, face = "bold"),
+        legend.title = element_text(size=14, face="bold"),
+        legend.text=element_text(size=14),
+        legend.position = "none") +
+  annotate("text", x = 60, y = 2, label = 'atop(bold("Year 2017"))', parse = TRUE,
+           size = 6, colour = "azure4") +
+  annotate("text", x = 60, y = -1, label = 'atop(bold("Year 2016"))', parse = TRUE,
+           size = 6, colour = "azure4")
+write.table(sigtab,"~/Documents/article3/metatranscriptomics_dbCor/a3_sys_supp_yr.tsv",sep = "\t", quote = FALSE)
+dim(sigtab)
+dim(sigtab[sigtab$log2FoldChange >0,])
+dim(sigtab[sigtab$log2FoldChange <0,])
+
+#Top genes ####
+hier <- read.delim("gene_names_dbCor.tsv",sep="\t", header=TRUE) 
+rownames(hier) = hier$gene
+#|FC| > 3 & padj < 0.05 
+res.topGenes = res[(abs(res$log2FoldChange)>3 & res$padj < alpha), ]
+hier05_2 = hier %>% dplyr::filter(rownames(hier) %in% rownames(res.topGenes))
+
+#Combine gene with results ####
+sigtab.topGenes = cbind(as(res.topGenes, "data.frame"), 
+                        as(hier05_2[rownames(res.topGenes), ], "matrix"))
+sigtab.topGenes
+ggplot(sigtab.topGenes, aes(x=rownames(sigtab.topGenes), y=log2FoldChange, color=level1)) + 
+  geom_hline(yintercept = 0.0, color = "gray", size = 0.5) +
+  geom_point(size=2) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5, size = 5),
+        legend.position = "none") 
+
+# Phylum order based on log2Foldchange 
+genLev1.topGenes = tapply(sigtab.topGenes$log2FoldChange, sigtab.topGenes$level1, function(x) max(x))
+genLev1.topGenes = sort(genLev1.topGenes, TRUE)
+sigtab.topGenes$level1 = factor(as.character(sigtab.topGenes$level1), levels=names(genLev1.topGenes))
+# Order genera based on their log2fold
+lev4.topGenes = tapply(sigtab.topGenes$log2FoldChange, sigtab.topGenes$level4, function(x) max(x))
+lev4.topGenes = sort(lev4.topGenes, TRUE)
+sigtab.topGenes$level4 = factor(as.character(sigtab.topGenes$level4), levels=names(lev4.topGenes))
+ggplot(sigtab.topGenes, aes(x=level4, y=log2FoldChange, color=level1)) + 
+  theme_classic() +
+  geom_hline(yintercept = 0.0, color = "gray", size = 0.5) +
+  geom_point(size=4) + 
+  #geom_bar(aes(fill = lev4.topGenes), stat = "identity") +
+  #facet_wrap(~level1, scales = "free") +
+  #scale_color_manual(values=c("cornflowerblue","indianred1","mediumvioletred","darkolivegreen4")) +
+  guides(col = guide_legend(ncol = 4)) +
+  theme(axis.text.x = element_text(size = 9, angle = -90, hjust = 0, vjust=0.5),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text( size = 14, face = "bold"),
+        legend.title = element_text(size=8, face="bold"),
+        legend.text=element_text(size=8),
+        legend.position = "bottom") +
+  annotate("text", x = 5.5, y = 1, label = 'atop(bold("Year 2017"))', parse = TRUE,
+           size = 6, colour = "azure4") +
+  annotate("text", x = 5.5, y = -0.8, label = 'atop(bold("Year 2016"))', parse = TRUE,
+           size = 6, colour = "azure4")
+View(sigtab.topGenes)
+#save
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_s5_deseq_subsys_yr.RData")
