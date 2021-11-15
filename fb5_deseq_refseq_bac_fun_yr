@@ -1,0 +1,78 @@
+################################################################
+# Differential expression analysis of soil metatranscriptomics #
+# Data: Hiseq - RefSeq Bacteria - year                         # 
+# Mona Parizadeh - 2020-2021                                   #
+################################################################
+
+library(phyloseq); packageVersion("phyloseq") #‘1.34.0’
+library(vegan); packageVersion("vegan") #‘2.5.7’
+library(ggplot2); packageVersion("ggplot2") #‘3.3.3’
+library(DESeq2); packageVersion("DESeq2") #‘1.30.0’
+library(dplyr); packageVersion("dplyr") #‘1.0.4’
+
+# Import data #### 
+setwd("~/Documents/article3/metatranscriptomics_dbCor/")
+ps = readRDS("ps_ref_bac_dbCor_clean.rds")
+ps
+fun <- read.delim("function_names_bac_dbCor_clean.tsv",sep="\t", header=TRUE) 
+head(fun);dim(fun)
+
+#Phyloseq to deseq2 conversion ####
+phTOds = phyloseq_to_deseq2(ps, design = ~ year) #dds file
+is(phTOds); isS4(phTOds)
+#contents
+slotNames(phTOds) 
+#estimate size factors 
+fcs = estimateSizeFactors(phTOds) #no need to calculate geometric means
+#Bayesian estimation of dispersion
+dsp = estimateDispersions(fcs)
+plotDispEsts(dsp)
+
+#DESeq ####
+dds = DESeq(phTOds, test = "Wald", fitType="local")
+head(colData(dds))
+
+# investigate test results table ####
+#results(): extracts a table from a DESeq analysis
+resultsNames(dds)
+res = results(dds)
+res = res[order(res$padj, na.last=NA), ] #remove padj NAs
+head(res)
+mcols(res, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res); is(res)
+slotNames(res)
+summary(res)
+hist(res$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res$padj < 0.1, na.rm=TRUE)
+sum(res$padj < 0.05, na.rm=TRUE)
+sum(res$padj < 0.01, na.rm=TRUE)
+
+#Set padj the threshold ####
+alpha = 0.05 # Threshold on the adjusted p-value
+sigtab = res[(res$padj < alpha), ]
+sigtab
+fun05 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab))
+
+#Combine gene with results ####
+sigtab = cbind(as(sigtab, "data.frame"), 
+               as(fun[rownames(sigtab), ], "matrix"))
+View(sigtab)
+write.table(sigtab,"~/Documents/article3/metatranscriptomics_dbCor/a3_bac_supp_yr.tsv",sep = "\t", quote = FALSE)
+dim(sigtab)
+dim(sigtab[sigtab$log2FoldChange >0,])
+dim(sigtab[sigtab$log2FoldChange <0,])
+
+#Top genes ####
+fun <- read.delim("function_names_bac_dbCor_clean.tsv",sep="\t", header=TRUE)
+#|FC| > 5 & padj < 0.05 
+res.topGenes = res[(abs(res$log2FoldChange)>5 & res$padj < alpha), ]
+fun05_2 = fun %>% dplyr::filter(rownames(fun) %in% rownames(res.topGenes))
+
+#Combine gene with results ####
+sigtab.topGenes = cbind(as(res.topGenes, "data.frame"), 
+                        as(fun05_2[rownames(res.topGenes), ], "matrix"))
+sigtab.topGenes; dim(sigtab.topGenes)
+View(sigtab.topGenes)
+#save
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_fb5_deseq_refseq_bac_fun_yr.RData")
