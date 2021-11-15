@@ -1,0 +1,207 @@
+###############################################################
+# Explanatory analysis of metatranscriptomic data             #
+# Data: Hiseq - RefSeq Eukaryotes                             # 
+# Mona Parizadeh - 2020-2021                                  #
+###############################################################
+
+# Load libraries
+library(phyloseq); packageVersion("phyloseq") #‘1.34.0’
+library(vegan); packageVersion("vegan") #‘2.5.7’
+library(ggplot2); packageVersion("ggplot2") #‘3.3.3’
+
+# Import data #### 
+setwd("~/Documents/article3/metatranscriptomics_dbCor/")
+ps = readRDS("ps_ref_euk_dbCor_clean_noHP_rare.rds")
+ps
+fun = read.delim("function_names_euk_dbCor_clean_noHP_rare.tsv")
+dim(fun)
+
+#Richness ####
+gene.rich = estimate_richness(ps, measures = "Observed") #gene per sample (richness)
+summary(gene.rich)
+sd(gene.rich$Observed, na.rm=TRUE) /  
+  sqrt(length(gene.rich$Observed[!is.na(gene.rich$Observed)])) #SE 
+
+#Top 10 ####
+#relative abundance
+ps.ra = transform_sample_counts(ps, function(otu) otu/sum(otu)) 
+#melt
+ps.tab = psmelt(ps.ra); dim(ps.tab)
+#merge
+ps.mrg = merge(ps.tab, fun, by.x = "OTU", by.y = "id", all = TRUE)
+head(ps.mrg); dim(ps.mrg)
+ps.mrg.ra.ord = ps.mrg %>%
+  group_by(function.)  %>%
+  # Add abundances within each phylum 
+  summarize_at("Abundance", sum)  %>%
+  arrange(dplyr::desc(Abundance))  %>% 
+  mutate(rel_abund = Abundance/sum(Abundance)*100)
+
+ps.mrg.ra.ord[1:10,]
+sum(ps.mrg.ra.ord[1:10,3]) #sum(ps.mrg.ra.ord[1:10,]$rel_abund)
+top = ps.mrg.ra.ord[1:10,1]
+#top = names(sort(taxa_sums(ps), decreasing=TRUE))[1:10]
+fun.top = fun[which(fun$function. %in% top$function.),]
+dim(fun.top)
+ps.top = prune_taxa(fun.top$id, ps)
+sum(taxa_sums(ps.top))/sum(taxa_sums(ps)) * 100
+ps.top.ra = transform_sample_counts(ps.top, function(otu) otu/sum(otu)) 
+ps.top.tab = psmelt(ps.top.ra)
+ps.top.mrg = merge(ps.top.tab, fun.top, by.x = "OTU", by.y = "id", all = TRUE, 
+                   no.dups = TRUE)
+dim(ps.top.mrg)
+#correct function names (Capital first letter)
+ps.top.mrg$function.[which(ps.top.mrg$function. == "chaperone protein DnaK")] = "Chaperone protein DnaK" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "chaperonin homolog HSP60, mitochondrial precursor, partial")] = "Chaperonin homolog HSP60, mitochondrial precursor, partial" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "chaperonin Hsp-60")] = "Chaperonin Hsp-60" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "cold-shock DNA-binding domain-containing protein")] = "Cold-shock DNA-binding domain-containing protein" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "elongation factor Tu, mitochondrial precursor")] = "Elongation factor Tu, mitochondrial precursor" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "heat shock protein 60, mitochondrial precursor")] = "Heat shock protein 60, mitochondrial precursor" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "heat shock protein 78, mitochondrial precursor")] = "Heat shock protein 78, mitochondrial precursor" 
+ps.top.mrg$function.[which(ps.top.mrg$function. == "putative chaperonin GroL")] = "Putative chaperonin GroL" 
+
+#Fig.S2C####
+top = ggplot(ps.top.mrg, aes(x = sampleid, y = Abundance)) +
+  theme_bw() +
+  geom_bar(aes(fill = function.), stat = "identity") +
+  facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
+             labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
+  scale_x_discrete("Sample ID") +
+  scale_y_continuous("") +
+  # scale_fill_manual(name = "Ten Most Abundant Soil RefSeq\n Eukaryotic Functional activities",
+  #                   values = c("blue2","pink","coral","chocolate3","cadetblue3",
+  #                              "bisque4","darkorange2","brown3","yellow2","darkkhaki")) +
+  scale_fill_manual(name = "Ten Most Abundant Soil RefSeq\n Eukaryotic Functional Categories",
+                    values = c("blue2","coral3","darkorange1","brown2","cadetblue3",
+                               "bisque4","coral1","brown3","yellow2","darkkhaki")) +
+  #scale_fill_viridis_d(name = "Ten Most Abundant Eukaryotic Functional Activities",option = "D") +
+  theme(axis.text.x = element_text(size = 10, angle = 90), #axis 
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, face = "bold"), #main x-axis label
+        axis.title.y = element_text(size = 12, face = "bold"), #main y-axis label
+        strip.text.x = element_text(size=9, face="bold"),
+        legend.title = element_text(size = 12, face="bold"),
+        legend.text=element_text(size=10),
+        legend.position = 'right') 
+  labs(tag = "C)") + theme(plot.tag = element_text(size = 20, face = "bold"))
+top
+library(cowplot); packageVersion("cowplot") #"‘1.1.1’"
+save_plot("Documents/article3/metatranscriptomics_dbCor/graphs/ParizadehM_Fig.S2C_euk_fun_top.pdf",top, ncol = 2, nrow = 2)
+
+#PERMANOVA ####
+#make dataframe
+df = as(sample_data(ps), "data.frame")
+#bray-curtis distance
+dis = phyloseq::distance(ps,  method = "bray")
+#permanova
+set.seed(411)
+adns = adonis2(dis ~ year/month*neonic, df)
+adns
+
+# Homogeneity of dispersion test ####
+beta = betadisper(dis, df$neonic)
+beta
+#ANOVA
+set.seed(1233)
+permutest(beta)
+
+#Ordination ####
+pcoa = ordinate(ps, method = "MDS", k = 2, try = 100, distance = "bray")
+plot_ordination(ps, pcoa, color = "neonic", shape = "year") + geom_point(size=5) + ggtitle("PCoA") +
+  geom_text(aes(label = sampleid), check_overlap = TRUE, size = 3, nudge_y = -0.01) + #nudge_x to seperate id from point
+  scale_color_manual(name = "Treatment", values = c("chartreuse4", "darkred")) +
+  facet_wrap(~month)
+plot_ordination(ps, pcoa, color = "month", shape = "neonic") + geom_point(size=5) + ggtitle("PCoA") +
+  geom_text(aes(label = sampleid), check_overlap = TRUE, size = 3, nudge_y = -0.01)+ #nudge_x to seperate id from point
+  scale_color_manual(name = "Month", values = c("chartreuse4", "darkred")) +
+  facet_wrap(~year)
+
+pcoa1 = plot_ordination(ps,pcoa)
+#define variables as factors
+yr = get_variable(ps, "year")
+sample_data(ps)$year = factor(yr)
+mnt = get_variable(ps, "month")
+sample_data(ps)$month = factor(mnt)
+neo = get_variable(ps, "neonic")
+sample_data(ps)$neonic = factor(neo)
+# #% variables
+# group.neo.yr.mnt = paste(neo,mnt,yr, sep = "")
+# group.yr.mnt = paste(mnt,yr, sep = "")
+group.neo.mnt = paste(neo,mnt, sep = "")
+#define as factor
+group.neo.mnt.fac = factor(group.neo.mnt, levels = c("NJune","YJune",
+                                                     "NSeptember","YSeptember"))
+
+#Empty points of the PCoA replace them with the desired shapes 
+pcoa1$layers
+pcoa1$layers = pcoa1$layers[-1] #remove the original points to add the desired colors and shapes
+#Fig.1C####
+p.pcoa = pcoa1 +
+  theme_bw() +
+  #group by year and month
+  stat_ellipse(aes(fill = year, group = year), geom = "polygon",
+               level = 0.99, linetype = 0, alpha = 0.2, show.legend=TRUE) +
+  scale_fill_manual(name="Year ellipses",values = c("cornflowerblue","darkgoldenrod3")) +
+  geom_point(size = 5, alpha = 0.9, aes(color = group.neo.mnt.fac, shape = group.neo.mnt.fac)) +
+  #geom_text(aes(label=sampleid)) +
+  scale_shape_manual(name = "Treatment & Month",
+                     labels = c("June - Control","June - Neonicotinoid-treated",
+                                "September - Control","September - Neonicotinoid-treated"),
+                     values = c(19,17, 19,17)) +
+  scale_colour_manual(name = "Treatment & Month",
+                      labels = c("June - Control","June - Neonicotinoid-treated",
+                                 "September - Control","September - Neonicotinoid-treated"),
+                      values = c("cyan4","cyan4","darkgoldenrod3","darkgoldenrod3")) +
+  theme(axis.text.x = element_text(size = 12), #axis 
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12, face = "bold"), #main axis label
+        legend.title = element_text(size=12, face="bold"),legend.text=element_text(size=12),
+        legend.position = "none") +
+  guides(fill = guide_legend(override.aes=list(shape=15))) +
+  labs(tag = "C)") + theme(plot.tag = element_text(size = 20, face = "bold"))
+p.pcoa
+library(cowplot); packageVersion("cowplot") #"‘1.1.1’"
+save_plot("Documents/article3/metatranscriptomics_dbCor/graphs/ParizadehM_Fig.1C_euk_fun_pcoa.pdf",p.pcoa, ncol = 2, nrow = 2)
+
+#Richness ####
+shn.rich = cbind(estimate_richness(ps,measures = 'shannon'),
+                 sample_data(ps))
+library(ggpubr); packageVersion("ggpubr") #‘0.3.0’
+compare_means(Shannon ~ neonic, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = c("month","year"))
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = c("month","neonic"))
+compare_means(Shannon ~ month, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm")
+compare_means(Shannon ~ month, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = "neonic")
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm")
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = "neonic")
+ggplot(shn.rich, aes(x = month, y = Shannon, color=month)) +  
+  theme_bw() +
+  geom_boxplot() +
+  stat_compare_means(comparisons = list(c("June","September")), size = 5, 
+                     method = "wilcox.test", label = "p.signif", label.y.npc = 0.5, label.y = c(7.1)) # Add global p-value; #holm
+
+#Richness / month ####
+#June
+ps.jn = subset_samples(ps, sample_data(ps)$month == "June") 
+ps.jn = prune_taxa(taxa_sums(ps.jn)>0,ps.jn); ps.jn
+
+shn.rich.jn = cbind(estimate_richness(ps.jn,measures = c('shannon')),
+                    sample_data(ps.jn))
+summary(shn.rich.jn$Shannon)
+sd(shn.rich.jn$Shannon, na.rm=TRUE) /  
+  sqrt(length(shn.rich.jn$Shannon[!is.na(shn.rich.jn$Shannon)])) #SE
+#September
+ps.sp = subset_samples(ps, sample_data(ps)$month == "September") 
+ps.sp = prune_taxa(taxa_sums(ps.sp)>0,ps.sp); ps.sp
+
+shn.rich.sp = cbind(estimate_richness(ps.sp,measures = c('shannon')),
+                    sample_data(ps.sp))
+summary(shn.rich.sp$Shannon)
+sd(shn.rich.sp$Shannon, na.rm=TRUE) /  
+  sqrt(length(shn.rich.sp$Shannon[!is.na(shn.rich.sp$Shannon)])) #SE
+
+
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_fu3_exp_refseq_euk_fun.Rdata")
