@@ -1,0 +1,223 @@
+################################################################
+# Differential expression analysis of soil metatranscriptomics #
+# Data: Hiseq - RefSeq Bacteria                                # 
+# Mona Parizadeh - 2020-2021                                   #
+################################################################
+
+library(phyloseq); packageVersion("phyloseq") #‘1.34.6’
+library(vegan); packageVersion("vegan") #‘2.5.7’
+#library(ggplot2); packageVersion("ggplot2") #‘3.3.3’
+library(DESeq2); packageVersion("DESeq2") #‘1.30.0’
+library(dplyr); packageVersion("dplyr") #‘1.0.4’
+
+# Import data #### 
+setwd("~/Documents/article3/metatranscriptomics_dbCor/")
+ps = readRDS("ps_ref_bac_dbCor_clean.rds")
+ps
+fun <- read.delim("function_names_bac_dbCor_clean.tsv",sep="\t", header=TRUE) 
+head(fun);dim(fun)
+
+#Phyloseq to deseq2 conversion ####
+phTOds = phyloseq_to_deseq2(ps, design = ~ neonic) #dds file
+is(phTOds); isS4(phTOds)
+#contents
+slotNames(phTOds) 
+#estimate size factors 
+fcs = estimateSizeFactors(phTOds) #no need to calculate geometric means
+#Bayesian estimation of dispersion
+dsp = estimateDispersions(fcs)
+plotDispEsts(dsp)
+
+#DESeq ####
+dds = DESeq(phTOds, test = "Wald", fitType="local")
+head(colData(dds))
+# #boxplot(log2(assay(dds)), las=2, main="log2(x+1)")
+# #Variance Stabilizing Transformation
+# vsd <- vst(dds, fitType = "local")
+# dists <- dist(t(assay(vsd)))
+# plot(hclust(dists))
+# boxplot(assay(vsd), las=2, main="vsd")
+# plotPCA(vsd, intgroup = c("neonic", "month"))
+
+# investigate test results table ####
+#results(): extracts a table from a DESeq analysis
+resultsNames(dds)
+res = results(dds)
+res = res[order(res$padj, na.last=NA), ] #remove padj NAs
+head(res)
+mcols(res, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res); is(res)
+slotNames(res)
+summary(res)
+hist(res$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res$padj < 0.1, na.rm=TRUE)
+sum(res$padj < 0.05, na.rm=TRUE)
+sum(res$padj < 0.01, na.rm=TRUE)
+
+#add a new column including both months and neonic 
+sample_data(ps)$mnt_neo = as.factor(paste(sample_data(ps)$month, sample_data(ps)$neonic, sep="_"))
+sample_data(ps)$mnt_neo = factor(sample_data(ps)$mnt_neo,levels = c("June_N","June_Y",
+                                                                    "September_N","September_Y"))
+#change it to numeric
+#sample_data(ps)$mnt_neo = as.numeric(sample_data(ps)$mnt_neo)
+
+#Phyloseq to deseq2 conversion ####
+phTOds.mnt_neo = phyloseq_to_deseq2(ps, design = ~ mnt_neo) #dds file
+is(phTOds.mnt_neo); isS4(phTOds.mnt_neo)
+#contents
+slotNames(phTOds.mnt_neo) 
+#estimate size factors 
+fcs.mnt_neo = estimateSizeFactors(phTOds.mnt_neo) #no need to calculate geometric means
+#Bayesian estimation of dispersion
+dsp.mnt_neo = estimateDispersions(fcs.mnt_neo)
+plotDispEsts(dsp.mnt_neo)
+
+#DESeq ####
+dds.mnt_neo = DESeq(phTOds.mnt_neo, test = "Wald", fitType="local")
+head(colData(dds.mnt_neo))
+
+# investigate test results table ####
+#results(): extracts a table from a DESeq analysis
+resultsNames(dds.mnt_neo)
+#%June - neonic ####
+res.jn_neo = results(dds.mnt_neo,name = "mnt_neo_June_Y_vs_June_N")
+res.jn_neo = res.jn_neo[order(res.jn_neo$padj, na.last=NA), ] #remove padj NAs
+head(res.jn_neo)
+mcols(res.jn_neo, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res.jn_neo); is(res.jn_neo)
+slotNames(res.jn_neo)
+summary(res.jn_neo)
+hist(res.jn_neo$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res.jn_neo$padj < 0.1, na.rm=TRUE)
+sum(res.jn_neo$padj < 0.05, na.rm=TRUE)
+sum(res.jn_neo$padj < 0.01, na.rm=TRUE)
+
+#Set padj the threshold ####
+#alpha = 0.1
+sigtab.jn_neo1 = res.jn_neo[(res.jn_neo$padj < 0.1), ]
+sigtab.jn_neo1
+fun.jn05 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.jn_neo1))
+
+#Combine gene with results ####
+sigtab.jn_neo1 = cbind(as(sigtab.jn_neo1, "data.frame"), 
+                       as(fun.jn05[rownames(sigtab.jn_neo1), ], "matrix"))
+sigtab.jn_neo1
+
+#alpha = 0.05
+sigtab.jn_neo05 = res.jn_neo[(res.jn_neo$padj < 0.05), ]
+sigtab.jn_neo05
+fun05 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.jn_neo05))
+
+#Combine gene with results ####
+sigtab.jn_neo05 = cbind(as(sigtab.jn_neo05, "data.frame"), 
+                        as(fun05[rownames(sigtab.jn_neo05), ], "matrix"))
+sigtab.jn_neo05
+
+#alpha = 0.01
+sigtab.jn_neo01 = res.jn_neo[(res.jn_neo$padj < 0.01), ]
+sigtab.jn_neo01
+fun01 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.jn_neo01))
+
+#Combine gene with results ####
+sigtab.jn_neo01 = cbind(as(sigtab.jn_neo01, "data.frame"), 
+                        as(fun01[rownames(sigtab.jn_neo01), ], "matrix"))
+sigtab.jn_neo01
+
+#%September - neonic ####
+res.sp_neo = results(dds.mnt_neo,contrast = c("mnt_neo","September_Y","September_N"))
+res.sp_neo = res.sp_neo[order(res.sp_neo$padj, na.last=NA), ] #remove padj NAs
+head(res.sp_neo)
+mcols(res.sp_neo, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res.sp_neo); is(res.sp_neo)
+slotNames(res.sp_neo)
+summary(res.sp_neo)
+hist(res.sp_neo$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res.sp_neo$padj < 0.1, na.rm=TRUE)
+sum(res.sp_neo$padj < 0.05, na.rm=TRUE)
+sum(res.sp_neo$padj < 0.01, na.rm=TRUE)
+
+#Set padj the threshold ####
+sigtab.sp_neo05 = res.sp_neo[(res.sp_neo$padj < 0.5), ]
+sigtab.sp_neo05
+fun.sp05 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.sp_neo05))
+#Combine gene with results ####
+sigtab.sp_neo05 = cbind(as(sigtab.sp_neo05, "data.frame"), 
+                        as(fun.sp05[rownames(sigtab.sp_neo05), ], "matrix"))
+sigtab.sp_neo05
+
+#Years & Neonic ####
+#add a new column including both years and neonic 
+sample_data(ps)$yr_neo = as.factor(paste(sample_data(ps)$year, sample_data(ps)$neonic, sep="_"))
+sample_data(ps)$yr_neo = factor(sample_data(ps)$yr_neo,levels = c("2016_N","2016_Y",
+                                                                  "2017_N","2017_Y"))
+#Phyloseq to deseq2 conversion ####
+phTOds.yr_neo = phyloseq_to_deseq2(ps, design = ~ yr_neo) #dds file
+is(phTOds.yr_neo); isS4(phTOds.yr_neo)
+#contents
+slotNames(phTOds.yr_neo) 
+#estimate size factors 
+fcs.yr_neo = estimateSizeFactors(phTOds.yr_neo) #no need to calculate geometric means
+#Bayesian estimation of dispersion
+dsp.yr_neo = estimateDispersions(fcs.yr_neo)
+plotDispEsts(dsp.yr_neo)
+
+#DESeq ####
+dds.yr_neo = DESeq(phTOds.yr_neo, test = "Wald", fitType="local")
+head(colData(dds.yr_neo))
+
+# investigate test results table ####
+#results(): extracts a table from a DESeq analysis
+resultsNames(dds.yr_neo)
+#%2016 - neonic ####
+res.16_neo = results(dds.yr_neo,name = "yr_neo_2016_Y_vs_2016_N")
+res.16_neo = res.16_neo[order(res.16_neo$padj, na.last=NA), ] #remove padj NAs
+head(res.16_neo)
+mcols(res.16_neo, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res.16_neo); is(res.16_neo)
+slotNames(res.16_neo)
+summary(res.16_neo)
+hist(res.16_neo$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res.16_neo$padj < 0.1, na.rm=TRUE)
+sum(res.16_neo$padj < 0.05, na.rm=TRUE)
+sum(res.16_neo$padj < 0.01, na.rm=TRUE)
+
+#Set padj the threshold ####
+#alpha < 0.01
+sigtab.16_neo01 = res.16_neo[(res.16_neo$padj < 0.01), ]
+sigtab.16_neo01
+fun.1601 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.16_neo01))
+
+#Combine gene with results ####
+sigtab.16_neo01 = cbind(as(sigtab.16_neo01, "data.frame"), 
+                        as(fun.1601[rownames(sigtab.16_neo01), ], "matrix"))
+sigtab.16_neo01
+
+#alpha < 0.05
+sigtab.16_neo05 = res.16_neo[(res.16_neo$padj < 0.05), ]
+sigtab.16_neo05
+fun.1605 = fun %>% dplyr::filter(rownames(fun) %in% rownames(sigtab.16_neo05))
+
+#Combine gene with results ####
+sigtab.16_neo05 = cbind(as(sigtab.16_neo05, "data.frame"), 
+                        as(fun.1605[rownames(sigtab.16_neo05), ], "matrix"))
+sigtab.16_neo05
+
+#%2017 - neonic ####
+res.17_neo = results(dds.yr_neo,contrast = c("yr_neo","2017_Y","2017_N"))
+res.17_neo = res.17_neo[order(res.17_neo$padj, na.last=NA), ] #remove padj NAs
+head(res.17_neo)
+mcols(res.17_neo, use.names=TRUE) #or: colnames(aca.neo.res)
+class(res.17_neo); is(res.17_neo)
+slotNames(res.17_neo)
+summary(res.17_neo)
+hist(res.17_neo$padj, breaks=20, col="grey", main="DESeq2 p-value distribution", xlab="DESeq2 P-value", ylab="Frequency")
+#How many adjusted p-values were less than 0.1/0.5/0.01?
+sum(res.17_neo$padj < 0.1, na.rm=TRUE)
+sum(res.17_neo$padj < 0.05, na.rm=TRUE)
+sum(res.17_neo$padj < 0.01, na.rm=TRUE)
+
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_fb4_deseq_refseq_bac_fun.RData")
