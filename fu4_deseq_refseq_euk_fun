@@ -1,7 +1,7 @@
 ################################################################
 # Differential expression analysis of soil metatranscriptomics #
 # Data: Hiseq - RefSeq Eukaryotes                              # 
-# Mona Parizadeh - June 2021                                   #
+# Mona Parizadeh - 2020-2021                                   #
 ################################################################
 
 library(phyloseq); packageVersion("phyloseq") #‘1.34.6’
