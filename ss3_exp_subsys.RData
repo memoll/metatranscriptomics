@@ -1,0 +1,360 @@
+###############################################################
+# Explanatory analysis of soil metatranscriptomics            #
+# Data: Hiseq - seed sybsystem                                # 
+# Mona Parizadeh - 2020-2021                                 #
+###############################################################
+
+#load libraries ####
+library(vegan); packageVersion("vegan") #‘2.5.7’
+library(phyloseq); packageVersion("phyloseq") #‘1.34.0’
+library(ggplot2);packageVersion("ggplot2") #‘3.3.3’
+library(tidyverse);packageVersion("tidyverse") #‘1.3.0’
+
+#Import data ####
+setwd("~/Documents/article3/metatranscriptomics_dbCor/")
+ps <- readRDS("ps_sys_dbCor_noHP_rare.rds")
+ps
+hier <- read.delim("gene_names_dbCor_noHP_rare.tsv",sep="\t", header=TRUE) 
+head(hier);dim(hier)
+
+#Richness ####
+gene.rich = estimate_richness(ps, measures = "Observed") #gene per sample (richness)
+summary(gene.rich)
+sd(gene.rich$Observed, na.rm=TRUE) /  
+  sqrt(length(gene.rich$Observed[!is.na(gene.rich$Observed)])) #SE 
+
+#Top 10 ####
+#relative abundance
+ps.ra = transform_sample_counts(ps, function(otu) otu/sum(otu)) 
+#melt
+ps.tab = psmelt(ps.ra);dim(ps.tab)
+#merge
+ps.mrg = merge(ps.tab, hier, by.x = "OTU", by.y = "gene", all = TRUE)
+head(ps.mrg);dim(ps.mrg)
+#level 1 ####
+ps.mrg.ra.ord.lev1 = ps.mrg %>%
+  group_by(level1)  %>%
+  # Add abundances within each phylum 
+  summarize_at("Abundance", sum)  %>%
+  arrange(dplyr::desc(Abundance))  %>% 
+  mutate(rel_abund = Abundance/sum(Abundance)*100)
+ps.mrg.ra.ord.lev1[1:10,]
+top1 = ps.mrg.ra.ord.lev1[1:10,1]
+sum(ps.mrg.ra.ord.lev1[1:10,3]) #sum(taxa_sums(ps.top))/sum(taxa_sums(ps)) * 100
+# hier.top = hier[which(hier$level1 %in% top$level1),]
+# dim(hier.top)
+# #top = names(sort(taxa_sums(ps), decreasing=TRUE))[1:21] #random test
+# # ps.mrg.ra.ord[1:21,]
+# # sum(ps.mrg.ra.ord[1:21,3])
+# ps.top = prune_taxa(hier.top$gene, ps)
+# ps.top.ra = transform_sample_counts(ps.top, function(otu) otu/sum(otu)) 
+# ps.top.tab = psmelt(ps.top.ra)
+# ps.top.mrg = merge(ps.top.tab, hier.top, by.x = "OTU", by.y = "gene", all = TRUE, 
+#                    no.dups = TRUE)
+# dim(ps.top.mrg)
+# #replace NA
+# ps.top.mrg$level1[is.na(ps.top.mrg$level1)] <- "No Hierarchy"
+# #library(RColorBrewer)
+# library(viridisLite)
+# ps.top.mrg %>%
+#   #na.omit() %>%
+#   ggplot(aes(x = sampleid, y = Abundance)) + # label=Rel_Abund
+#   theme_bw() +
+#   geom_bar(stat = "identity", aes(fill = level1)) +
+#   #scale_fill_brewer(palette = "Set3") +
+#   facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
+#              labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
+#   scale_x_discrete("Sample ID") +
+#   scale_y_continuous("Relative Abundance") +
+#   scale_fill_viridis_d(name = "Hierarchical Functions - Level 1",option = "E") +
+#   theme(axis.text.x = element_text(size = 10, angle = 90), #axis 
+#         axis.text.y = element_text(size = 10),
+#         axis.title.x = element_text(size = 12, face = "bold"), #main x-axis label
+#         axis.title.y = element_text(size = 12, face = "bold"), #main y-axis label
+#         strip.text.x = element_text(size=10, face="bold"),
+#         legend.title = element_text(size = 12, face="bold"),
+#         legend.text=element_text(size=12),
+#         legend.position = 'left') 
+
+#level 2 ####
+ps.mrg.ra.ord.lev2 = ps.mrg %>%
+  group_by(level2)  %>%
+  # Add abundances within each phylum 
+  summarize_at("Abundance", sum)  %>%
+  arrange(dplyr::desc(Abundance))  %>% 
+  mutate(rel_abund = Abundance/sum(Abundance)*100)
+ps.mrg.ra.ord.lev2[1:10,]
+top2 = ps.mrg.ra.ord.lev2[1:10,1]
+sum(ps.mrg.ra.ord.lev2[1:10,]$rel_abund)
+
+#level 3 ####
+ps.mrg.ra.ord.lev3 = ps.mrg %>%
+  group_by(level3)  %>%
+  # Add abundances within each phylum 
+  summarize_at("Abundance", sum)  %>%
+  arrange(dplyr::desc(Abundance))  %>% 
+  mutate(rel_abund = Abundance/sum(Abundance)*100)
+ps.mrg.ra.ord.lev3[1:10,]
+top3 = ps.mrg.ra.ord.lev3[1:10,1]
+sum(ps.mrg.ra.ord.lev3[1:10,]$rel_abund)
+# hier.top3 = hier[which(hier$level3 %in% top3$level3),]
+# dim(hier.top3)
+# ps.top3 = prune_taxa(hier.top3$gene, ps)
+# ps.top3.ra = transform_sample_counts(ps.top3, function(otu) otu/sum(otu)) 
+# ps.top3.tab = psmelt(ps.top3.ra)
+# ps.top3.mrg = merge(ps.top3.tab, hier.top3, by.x = "OTU", by.y = "gene", all = TRUE, 
+#                     no.dups = TRUE)
+# dim(ps.top3.mrg)
+# #replace NA
+# ps.top3.mrg$level3[is.na(ps.top3.mrg$level3)] <- "No Hierarchy"
+# 
+# ggplot(ps.top3.mrg, aes(x = sampleid, y = Abundance)) +
+#   theme_bw() +
+#   geom_bar(aes(fill = level3), stat = "identity") +
+#   facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
+#              labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
+#   scale_x_discrete("Sample ID") +
+#   scale_y_continuous("Relative Abundance") +
+#   scale_fill_viridis_d(name = "Hierarchical Functions - Level 3",option = "E") +
+#   theme(axis.text.x = element_text(size = 10, angle = 90), #axis 
+#         axis.text.y = element_text(size = 10),
+#         axis.title.x = element_text(size = 12, face = "bold"), #main x-axis label
+#         axis.title.y = element_text(size = 12, face = "bold"), #main y-axis label
+#         strip.text.x = element_text(size=10, face="bold"),
+#         legend.title = element_text(size = 12, face="bold"),
+#         legend.text=element_text(size=12),
+#         legend.position = 'left')  
+
+
+#level 4 ####
+ps.mrg.ra.ord.lev4 = ps.mrg %>%
+  group_by(level4)  %>%
+  # Add abundances within each phylum 
+  summarize_at("Abundance", sum)  %>%
+  arrange(dplyr::desc(Abundance))  %>% 
+  mutate(rel_abund = Abundance/sum(Abundance)*100)
+ps.mrg.ra.ord.lev4[1:10,]
+top4 = ps.mrg.ra.ord.lev4[1:10,1]
+sum(ps.mrg.ra.ord.lev4[1:10,]$rel_abund)
+hier.top4 = hier[which(hier$level4 %in% top4$level4),]
+dim(hier.top4)
+ps.top4 = prune_taxa(hier.top4$gene, ps)
+ps.top4.ra = transform_sample_counts(ps.top4, function(otu) otu/sum(otu)) 
+ps.top4.tab = psmelt(ps.top4.ra)
+ps.top4.mrg = merge(ps.top4.tab, hier.top4, by.x = "OTU", by.y = "gene", all = TRUE, 
+                    no.dups = TRUE)
+dim(ps.top4.mrg)
+#correct function names
+ps.top4.mrg$level4[which(ps.top4.mrg$level4 == "NO HIERARCHY")] = "No Hierarchy" 
+
+#Fig.S2A####
+top = ggplot(ps.top4.mrg, aes(x = sampleid, y = Abundance)) +
+  theme_bw() +
+  geom_bar(aes(fill = level4), stat = "identity") +
+  facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
+             labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
+  scale_x_discrete("Sample ID") +
+  scale_y_continuous("Total relative Abundance") +
+  scale_fill_manual(name = "Ten Most Abundant Soil SEED Hierarchical\n Microbial Functional Categories - Level 4",
+                    values = c("mediumvioletred","burlywood1","blue2","darkgoldenrod1","brown3",
+                               "cornflowerblue","burlywood3","tan3","tan4","bisque4")) +
+  #scale_fill_viridis_d(name = "Ten Most Abundant Soil SEED Hierarchical\n Microbial Functional activities - Level 4",option = "D") +
+  theme(axis.text.x = element_text(size = 10, angle = 90), #axis 
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, face = "bold"), #main x-axis label
+        axis.title.y = element_text(size = 12, face = "bold"), #main y-axis label
+        strip.text.x = element_text(size=9, face="bold"),
+        legend.title = element_text(size = 12, face="bold"),
+        legend.text=element_text(size=10),
+        legend.position = 'right') +
+  labs(tag = "A)") + theme(plot.tag = element_text(size = 20, face = "bold"))
+top
+library(cowplot); packageVersion("cowplot") #"‘1.1.1’"
+save_plot("Documents/article3/metatranscriptomics_dbCor/graphs/ParizadehM_Fig.S2A_subsys_top.pdf",top, ncol = 2, nrow = 2)
+
+#PERMANOVA ####
+#make dataframe
+df = as(sample_data(ps), "data.frame")
+#bray-curtis distance
+dis = phyloseq::distance(ps,  method = "bray")
+#permanova
+set.seed(311)
+adns = adonis2(dis ~ year/month*neonic, df)
+adns
+
+# Homogeneity of dispersion test ####
+beta = betadisper(dis, df$neonic)
+beta
+#ANOVA
+set.seed(1233)
+permutest(beta)
+
+#Ordination ####
+pcoa = ordinate(ps, method = "MDS", k = 2, try = 100, distance = "bray")
+plot_ordination(ps, pcoa, color = "neonic", shape = "year") + geom_point(size=5) + ggtitle("PCoA") +
+  geom_text(aes(label = sampleid), check_overlap = TRUE, size = 3, nudge_y = -0.01) + #nudge_x to seperate id from point
+  scale_color_manual(name = "Treatment", values = c("chartreuse4", "darkred")) +
+  facet_wrap(~month)
+plot_ordination(ps, pcoa, color = "month", shape = "neonic") + geom_point(size=5) + ggtitle("PCoA") +
+  geom_text(aes(label = sampleid), check_overlap = TRUE, size = 3, nudge_y = -0.01)+ #nudge_x to seperate id from point
+  scale_color_manual(name = "Month", values = c("chartreuse4", "darkred")) +
+  facet_wrap(~year)
+
+
+# pcoa2 = ordinate(ps ~ neonic * month, "MDS")
+# p0 = plot_ordination(ps, pcoa2, type = "biplot", color = "month", shape = "neonic")
+# p0
+# # Now add the environmental variables as arrows
+# comm_10lev4 = otu_table(ps.top4)
+# arrowmat = vegan::scores(pcoa2,comm_10lev4, display = "bp")
+# biplot.pcoa(pcoa2, comm_10lev4)
+# arrowmat = pcoa2$vectors[,c(1:2)]
+# 
+# # Add labels, make a data.frame
+# arrowdf <- data.frame(labels = rownames(arrowmat), arrowmat)
+# # Define the arrow aesthetic mapping
+# arrow_map = aes(xend = Axis.1, yend = Axis.2, x = 0, y = 0, shape = NULL, color = NULL, 
+#                 label = labels)
+# label_map = aes(x = 1.2 * Axis.1, y = 1.2 * Axis.2, shape = NULL, color = NULL, 
+#                 label = labels)
+# # Make a new graphic
+# arrowhead = arrow(length = unit(0.05, "npc"))
+# p1 = p0 + geom_segment(arrow_map, size = 0.5, data = arrowdf, color = "gray", 
+#                        arrow = arrowhead) + geom_text(label_map, size = 2, data = arrowdf)
+# p1
+
+pcoa1 = plot_ordination(ps,pcoa)
+#define variables as factors
+yr = get_variable(ps, "year")
+sample_data(ps)$year = factor(yr)
+mnt = get_variable(ps, "month")
+sample_data(ps)$month = factor(mnt)
+neo = get_variable(ps, "neonic")
+sample_data(ps)$neonic = factor(neo)
+# #% variables
+# group.neo.yr.mnt = paste(neo,mnt,yr, sep = "")
+# group.yr.mnt = paste(mnt,yr, sep = "")
+group.neo.mnt = paste(neo,mnt, sep = "")
+#define as factor
+group.neo.mnt.fac = factor(group.neo.mnt, levels = c("NJune","YJune",
+                                                     "NSeptember","YSeptember"))
+
+#Empty points of the PCoA replace them with the desired shapes 
+pcoa1$layers
+pcoa1$layers = pcoa1$layers[-1] #remove the original points to add the desired colors and shapes
+
+# pcoa1 +
+#   theme_bw() +
+#   #group by year and month
+#   stat_ellipse(aes(fill = year, group = year), geom = "polygon",
+#                level = 0.95, linetype = 0, alpha = 0.2, show.legend=FALSE) +
+#   #scale_fill_manual(name="Year & Month ellipses",values = hbt.hst.colors) +
+#   geom_point(size = 5, alpha = 0.9, aes(color = group.neo.yr.mnt, shape = group.neo.yr.mnt)) +
+#   scale_shape_manual(name = "",
+#                      labels = c("June 2016 - Soybean - Control","June 2016 - Soybean - Neonicotinoid-treated",
+#                                 "September 2016 - Soybean - Control","September 2016 - Soybean - Neonicotinoid-treated",
+#                                 "June 2017 - Corn - Control","June 2017 - Corn - Neonicotinoid-treated",
+#                                 "September 2017 - Corn - Control","September 2017 - Corn - Neonicotinoid-treated"),
+#                      values = c(19,17, 19,17, 19, 17, 19,17)) +
+#   scale_colour_manual(name = "",
+#                       labels = c("June 2016 - Soybean - Control","June 2016 - Soybean - Neonicotinoid-treated",
+#                                  "September 2016 - Soybean - Control","September 2016 - Soybean - Neonicotinoid-treated",
+#                                  "June 2017 - Corn - Control","June 2017 - Corn - Neonicotinoid-treated",
+#                                  "September 2017 - Corn - Control","September 2017 - Corn - Neonicotinoid-treated"),
+#                       values = c("cyan4","cyan4","darkgoldenrod3","darkgoldenrod3",
+#                                  "cyan4","cyan4","darkgoldenrod3","darkgoldenrod3")) +
+#   theme(axis.text.x = element_text(size = 12), #axis 
+#         axis.text.y = element_text(size = 12),
+#         axis.title = element_text(size = 12, face = "bold"), #main axis label
+#         legend.title = element_text(size=12, face="bold"),legend.text=element_text(size=12),
+#         legend.position = "right") +
+#   guides(fill = guide_legend(override.aes=list(shape=15))) 
+#Fig.1A####
+p.pcoa = pcoa1 +
+  theme_bw() +
+  #group by year and month
+  stat_ellipse(aes(fill = year, group = year), geom = "polygon",
+               level = 0.99, linetype = 0, alpha = 0.2, show.legend=TRUE) +
+  scale_fill_manual(name="Host & Year ellipses",values = c("cornflowerblue","darkgoldenrod3"),
+                    labels = c("Soybean 2016","Corn 2017")) +
+  geom_point(size = 5, alpha = 0.9, aes(color = group.neo.mnt.fac, shape = group.neo.mnt.fac)) +
+  #geom_text(aes(label=sampleid)) +
+  scale_shape_manual(name = "Treatment & Month",
+                     labels = c("June - Control","June - Neonicotinoid-treated",
+                                "September - Control","September - Neonicotinoid-treated"),
+                     values = c(19,17, 19,17)) +
+  scale_colour_manual(name = "Treatment & Month",
+                      labels = c("June - Control","June - Neonicotinoid-treated",
+                                 "September - Control","September - Neonicotinoid-treated"),
+                      values = c("cyan4","cyan4","darkgoldenrod3","darkgoldenrod3")) +
+  theme(axis.text.x = element_text(size = 12), #axis 
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12, face = "bold"), #main axis label
+        legend.title = element_text(size=12, face="bold"),legend.text=element_text(size=12),
+        legend.position = "right") +
+  guides(fill = guide_legend(override.aes=list(shape=15))) +
+  labs(tag = "A)") + theme(plot.tag = element_text(size = 20, face = "bold"))
+p.pcoa
+library(cowplot); packageVersion("cowplot") #"‘1.1.1’"
+save_plot("Documents/article3/metatranscriptomics_dbCor/graphs/ParizadehM_Fig.1A_subsys_pcoa.pdf",p.pcoa, ncol = 2, nrow = 2)
+
+#Richness ####
+shn.rich = cbind(estimate_richness(ps,measures = 'shannon'),
+                 sample_data(ps))
+library(ggpubr); packageVersion("ggpubr") #‘0.3.0’
+compare_means(Shannon ~ neonic, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = c("month","year"))
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = c("month","neonic"))
+compare_means(Shannon ~ month, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm")
+compare_means(Shannon ~ month, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = "neonic")
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm")
+compare_means(Shannon ~ year, data = shn.rich, method = "wilcox.test", p.adjust.method = "holm",
+              group.by = "neonic")
+ggplot(shn.rich, aes(x = month, y = Shannon, color=month)) +  
+  theme_bw() +
+  geom_boxplot() +
+  stat_compare_means(comparisons = list(c("June","September")), size = 5, 
+                     method = "wilcox.test", label = "p.signif", label.y.npc = 0.5, label.y = c(7.1)) # Add global p-value; #holm
+
+#Richness / month ####
+#June
+ps.jn = subset_samples(ps, sample_data(ps)$month == "June") 
+ps.jn = prune_taxa(taxa_sums(ps.jn)>0,ps.jn); ps.jn
+
+shn.rich.jn = cbind(estimate_richness(ps.jn,measures = c('shannon')),
+                    sample_data(ps.jn))
+summary(shn.rich.jn$Shannon)
+sd(shn.rich.jn$Shannon, na.rm=TRUE) /  
+  sqrt(length(shn.rich.jn$Shannon[!is.na(shn.rich.jn$Shannon)])) #SE
+#September
+ps.sp = subset_samples(ps, sample_data(ps)$month == "September") 
+ps.sp = prune_taxa(taxa_sums(ps.sp)>0,ps.sp); ps.sp
+
+shn.rich.sp = cbind(estimate_richness(ps.sp,measures = c('shannon')),
+                    sample_data(ps.sp))
+summary(shn.rich.sp$Shannon)
+sd(shn.rich.sp$Shannon, na.rm=TRUE) /  
+  sqrt(length(shn.rich.sp$Shannon[!is.na(shn.rich.sp$Shannon)])) #SE
+
+#Subset years ####
+#PERMANOVA 
+#2016
+ps16 = subset_samples(ps, sample_data(ps)$year == "2016")
+ps16 = prune_taxa(taxa_sums(ps16)>0,ps16)
+df16 = as(sample_data(ps16), "data.frame")
+dis16 = phyloseq::distance(ps16,  method = "bray")
+set.seed(3112)
+adns16 = adonis2(dis16 ~ month*neonic, df16)
+adns16
+#2017
+ps17 = subset_samples(ps, sample_data(ps)$year == "2017")
+ps17 = prune_taxa(taxa_sums(ps17)>0,ps17)
+df17 = as(sample_data(ps17), "data.frame")
+dis17 = phyloseq::distance(ps17,  method = "bray")
+set.seed(3113)
+adns17 = adonis2(dis17 ~ month*neonic, df17)
+adns17
+
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_s3_exp_subsys.RData")
