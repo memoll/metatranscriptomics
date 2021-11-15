@@ -43,10 +43,12 @@ file_names = file_names[-1]
 file_names_trimmed = ""
 for (name in file_names) {
   file_names_trimmed = c(file_names_trimmed, unlist(strsplit(name, split='.', fixed=TRUE))[2])}
-file_names_trimmed = file_names_trimmed[-1]
+file_names_trimmed = file_names_trimmed[-1] #remove the empty colname
 colnames(table_trimmed) = file_names_trimmed
+rownames(table_trimmed)[1] = "Unannotated"
 dim(table_trimmed);length(file_names_trimmed)
-table_trimmed = table_trimmed[-1,] #remove unassigned functions
+#(sum(table_trimmed[1,2:32])/sum(table_trimmed[2:32]))*100 #removed seqs
+#table_trimmed = table_trimmed[-1,] #remove unassigned functions
 head(table_trimmed); dim(table_trimmed)
 
 # Export function names ####
@@ -55,10 +57,11 @@ fun_lables = paste0("fun", seq(rownames(table_trimmed)))
 fun_table = cbind(fun_lables,fun_names)
 colnames(fun_table) = c("id","function")
 head(fun_table);dim(fun_table)
-write.table(fun_table,"~/Documents/article3/metatranscriptomics/function_names.tsv",sep = "\t", quote = FALSE)
+write.table(fun_table,"~/Documents/article3/metatranscriptomics_dbCor/function_names_bac.tsv",sep = "\t", quote = FALSE)
 # Rename functions 
 rownames(table_trimmed) = fun_lables
-saveRDS(table_trimmed, "~/Documents/article3/metatranscriptomics/aca_rna_refseq_bac_fun.rds")
+saveRDS(table_trimmed, "~/Documents/article3/metatranscriptomics_dbCor/aca_rna_refseq_bac_fun.rds")
 
-save.image("~/Documents/article3/metatranscriptomics/a3_f1_import_refseq_bac_fun.Rdata")
+save.image("~/Documents/article3/metatranscriptomics_dbCor/a3_fb1_import_refseq_bac_fun.Rdata")
+
 
