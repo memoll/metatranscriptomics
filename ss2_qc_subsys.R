@@ -140,7 +140,7 @@ rare_curve_summary = ddply(rare_curve,
                            c('Depth', 'Sample', 'Measure'), summarise, 
                            Alpha_diversity_mean = mean(Alpha_diversity))
 obs = rare_curve_summary[rare_curve_summary$Measure=="Observed",]
-#Fig.S1A####
+#Fig.S2A####
 # Plot
 rare = ggplot(data = obs,mapping = aes(x = Depth,y = Alpha_diversity_mean,colour=Sample,group=Sample)) + 
   theme_bw() +
