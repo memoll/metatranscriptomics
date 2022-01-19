@@ -60,14 +60,14 @@ ps.top.mrg$function.[which(ps.top.mrg$function. == "heat shock protein 60, mitoc
 ps.top.mrg$function.[which(ps.top.mrg$function. == "heat shock protein 78, mitochondrial precursor")] = "Heat shock protein 78, mitochondrial precursor" 
 ps.top.mrg$function.[which(ps.top.mrg$function. == "putative chaperonin GroL")] = "Putative chaperonin GroL" 
 
-#Fig.S2C####
+#Fig.S11C####
 top = ggplot(ps.top.mrg, aes(x = sampleid, y = Abundance)) +
   theme_bw() +
   geom_bar(aes(fill = function.), stat = "identity") +
   facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
              labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
   scale_x_discrete("Sample ID") +
-  scale_y_continuous("") +
+  scale_y_continuous("Total Relative Abundance") +
   # scale_fill_manual(name = "Ten Most Abundant Soil RefSeq\n Eukaryotic Functional activities",
   #                   values = c("blue2","pink","coral","chocolate3","cadetblue3",
   #                              "bisque4","darkorange2","brown3","yellow2","darkkhaki")) +
@@ -82,7 +82,7 @@ top = ggplot(ps.top.mrg, aes(x = sampleid, y = Abundance)) +
         strip.text.x = element_text(size=9, face="bold"),
         legend.title = element_text(size = 12, face="bold"),
         legend.text=element_text(size=10),
-        legend.position = 'right') 
+        legend.position = 'right') +
   labs(tag = "C)") + theme(plot.tag = element_text(size = 20, face = "bold"))
 top
 library(cowplot); packageVersion("cowplot") #"‘1.1.1’"
