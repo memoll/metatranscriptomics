@@ -58,14 +58,14 @@ ps.top.mrg$function.[which(ps.top.mrg$function. == "endopeptidase La")] = "Endop
 ps.top.mrg$function.[which(ps.top.mrg$function. == "molecular chaperone DnaK")] = "Molecular chaperone DnaK" 
 ps.top.mrg$function.[which(ps.top.mrg$function. == "molecular chaperone GroEL")] = "Molecular chaperone GroEL" 
 
-#Fig.S2B####
+#Fig.S1B####
 top = ggplot(ps.top.mrg, aes(x = sampleid, y = Abundance)) +
   theme_bw() +
   geom_bar(aes(fill = function.), stat = "identity") +
   facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
              labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
   scale_x_discrete("Sample ID") +
-  scale_y_continuous("Total relative Abundance") +
+  scale_y_continuous("Total Relative Abundance") +
   scale_fill_manual(name = "Ten Most Abundant Soil RefSeq\n Bacterial Functional Categories",
                     values = c("darkorchid4","chocolate3","tan2","darkgoldenrod1","tan4",
                                "bisque4","burlywood3","darkolivegreen4","blue2","brown3")) +
