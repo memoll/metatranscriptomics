@@ -147,14 +147,14 @@ dim(ps.top4.mrg)
 #correct function names
 ps.top4.mrg$level4[which(ps.top4.mrg$level4 == "NO HIERARCHY")] = "No Hierarchy" 
 
-#Fig.S2A####
+#Fig.S1A####
 top = ggplot(ps.top4.mrg, aes(x = sampleid, y = Abundance)) +
   theme_bw() +
   geom_bar(aes(fill = level4), stat = "identity") +
   facet_wrap(~year+neonic, scales = "free_x", ncol = 4,
              labeller=labeller(neonic = c(N="Control",Y="Neonicotinoid-treated"))) +
   scale_x_discrete("Sample ID") +
-  scale_y_continuous("Total relative Abundance") +
+  scale_y_continuous("Total Relative Abundance") +
   scale_fill_manual(name = "Ten Most Abundant Soil SEED Hierarchical\n Microbial Functional Categories - Level 4",
                     values = c("mediumvioletred","burlywood1","blue2","darkgoldenrod1","brown3",
                                "cornflowerblue","burlywood3","tan3","tan4","bisque4")) +
