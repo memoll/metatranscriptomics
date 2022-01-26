@@ -16,4 +16,4 @@ genomes (scripts starting with "fu") databases.
 - Merge the final results of multiple runs and assign taxonomy
 - Quality control, denoising and cleaning data
 - Explanatory analysis 
-- Differential expression analysis 
+- Differential expression analysis (treatment - month - year) 
