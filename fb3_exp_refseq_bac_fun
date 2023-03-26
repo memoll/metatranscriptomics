@@ -33,7 +33,7 @@ ps.mrg = merge(ps.tab, fun, by.x = "OTU", by.y = "id", all = TRUE)
 head(ps.mrg); dim(ps.mrg)
 ps.mrg.ra.ord = ps.mrg %>%
   group_by(function.)  %>%
-  # Add abundances within each phylum 
+  # Add abundances within each genus
   summarize_at("Abundance", sum)  %>%
   arrange(dplyr::desc(Abundance))  %>% 
   mutate(rel_abund = Abundance/sum(Abundance)*100)
